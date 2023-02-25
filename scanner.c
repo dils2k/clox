@@ -18,13 +18,6 @@ void initScanner(const char* source) {
   scanner.line = 1;
 }
 
-typedef struct {
-  TokenType type;
-  const char* start;
-  int length;
-  int line;
-} Token;
-
 static bool isAtEnd() {
   return *scanner.current == '\0';
 }

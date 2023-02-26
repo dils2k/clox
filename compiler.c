@@ -5,6 +5,10 @@
 #include "compiler.h"
 #include "scanner.h"
 
+#ifdef DEBUG_PRINT_CODE
+#include "debug.h"
+#endif
+
 typedef struct {
   Token current;
   Token previous;
@@ -100,6 +104,11 @@ static void emitReturn() {
 
 static void endCompiler() {
   emitReturn();
+#ifdef DEBUG_PRINT_CODE
+  if (!parser.hadError) {
+    disassembleChunk(currentChunk(), "code");
+  }
+#endif
 }
 
 static void expression();
@@ -133,13 +142,13 @@ static void parsePrecedence(Precedence precedence) {
     return;
   }
 
+  prefixRule();
+
   while (precedence <= getRule(parser.current.type)->precedence) {
     advance();
     ParseFn infixRule = getRule(parser.previous.type)->infix;
     infixRule();
   }
-
-  prefixRule();
 }
 
 static void expression() {
@@ -152,15 +161,27 @@ static void grouping() {
 }
 
 static void unary() {
-  parsePrecedence(PREC_UNARY);
-
   TokenType operatorType = parser.previous.type;
 
-  expression();
+  parsePrecedence(PREC_UNARY);
 
   switch (operatorType) {
     case TOKEN_MINUS: emitByte(OP_NEGATE); break;
     default: return;
+  }
+}
+
+static void binary() {
+  TokenType operatorType = parser.previous.type;
+  ParseRule* rule = getRule(operatorType);
+  parsePrecedence((Precedence)(rule->precedence+1));
+
+  switch (operatorType) {
+    case TOKEN_PLUS:          emitByte(OP_ADD); break;
+    case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
+    case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
+    case TOKEN_SLASH:         emitByte(OP_DIVIDE); break;
+    default: return; // Unreachable.
   }
 }
 
@@ -209,20 +230,6 @@ ParseRule rules[] = {
 
 static ParseRule* getRule(TokenType type) {
   return &rules[type];
-}
-
-static void binary() {
-  TokenType operatorType = parser.previous.type;
-  ParseRule* rule = getRule(operatorType);
-  parsePrecedence((Precedence)(rule->precedence+1));
-
-  switch (operatorType) {
-    case TOKEN_PLUS:          emitByte(OP_ADD); break;
-    case TOKEN_MINUS:         emitByte(OP_SUBTRACT); break;
-    case TOKEN_STAR:          emitByte(OP_MULTIPLY); break;
-    case TOKEN_SLASH:         emitByte(OP_DIVIDE); break;
-    default: return; // Unreachable.
-  }
 }
 
 bool compile(const char* source, Chunk* chunk) {

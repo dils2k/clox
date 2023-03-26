@@ -20,6 +20,8 @@ typedef enum {
   OP_LESS,
   OP_NEGATE,
   OP_PRINT,
+  OP_DEFINE_GLOBAL,
+  OP_GET_GLOBAL,
   OP_RETURN
 } OpCode;
 

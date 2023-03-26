@@ -16,6 +16,7 @@ typedef struct {
   Value* stackTop;
   Obj* objects;
   Table strings;
+  Table globals;
 } VM;
 
 extern VM vm;

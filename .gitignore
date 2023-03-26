@@ -70,3 +70,5 @@ build
 clox
 
 .vscode
+
+test.lox

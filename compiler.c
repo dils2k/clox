@@ -382,6 +382,71 @@ static void expressionStatement() {
   emitByte(OP_POP);
 }
 
+static void forStatement() {
+  // If a for statement declares a variable, that variable should be scoped to
+  // the loop body. We ensure that by wrapping the whole statement in a scope.
+  beginScope();
+
+  consume(TOKEN_LEFT_PAREN, "Expect '(' after 'for'.");
+  if (match(TOKEN_SEMICOLON)) {
+    // No initializer.
+  } else if (match(TOKEN_VAR)) {
+    varDeclaration();
+  } else {
+    expressionStatement();
+  }
+
+  // Since conditional clause is optional, we need to see if it’s actually
+  // present. If the clause is omitted, the next token must be a semicolon,
+  // so we look for that to tell.
+  // If there isn’t a semicolon, there must be a condition expression.
+  // In that case, we compile it. Then, just like with while, we emit a
+  // conditional jump that exits the loop if the condition is falsey.
+  // Since the jump leaves the value on the stack, we pop it before executing
+  // the body.
+  // That ensures we discard the value when the condition is true.
+  int loopStart = currentChunk()->count;
+  int exitJump = -1;
+  if (!match(TOKEN_SEMICOLON)) {
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after loop condition.");
+
+    // Jump out of the loop if the condition is false.
+    exitJump = emitJump(OP_JUMP_IF_FALSE);
+    emitByte(OP_POP); // Condition.
+  }
+
+  // If we parsed to an AST and generated code in a separate pass, we could
+  // simply raverse into and compile the for statement AST’s body field before
+  // its increment clause.
+  // 
+  // Unfortunately, we can’t compile the increment clause later, since our
+  // compiler only makes a single pass over the code. Instead, we’ll jump over
+  // the increment, run the body, jump back up to the increment, run it, and
+  // then go to the next iteration.
+  if (!match(TOKEN_RIGHT_PAREN)) {
+    int bodyJump = emitJump(OP_JUMP);
+    int incrementStart = currentChunk()->count;
+    expression();
+    emitByte(OP_POP);
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after for clauses.");
+
+    emitLoop(loopStart);
+    loopStart = incrementStart;
+    patchJump(bodyJump);
+  }
+
+  statement();
+  emitLoop(loopStart);
+
+  if (exitJump != -1) {
+    patchJump(exitJump);
+    emitByte(OP_POP); // Condition.
+  }
+
+  endScope();
+}
+
 static void ifStatement() {
   consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
   expression();
@@ -464,6 +529,8 @@ static void statement() {
     ifStatement();
   } else if (match(TOKEN_WHILE)) {
     whileStatement();
+  } else if (match(TOKEN_FOR)) {
+    forStatement();
   } else {
     expressionStatement();
   }

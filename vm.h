@@ -6,7 +6,6 @@
 #ifndef clox_vm_h
 #define clox_vm_h
 
-
 typedef struct {
   ObjFunction* function;
   uint8_t* ip;

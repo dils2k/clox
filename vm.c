@@ -33,8 +33,7 @@ static void runtimeError(const char* format, ...) {
     CallFrame* frame = &vm.frames[i];
     ObjFunction* function = frame->closure->function;
     size_t instruction = frame->ip - function->chunk.code - 1;
-    fprintf(stderr, "[line %d] in ", 
-            function->chunk.lines[instruction]);
+    fprintf(stderr, "[line %d] in ", function->chunk.lines[instruction]);
     if (function->name == NULL) {
       fprintf(stderr, "script\n");
     } else {
@@ -119,6 +118,11 @@ static bool callValue(Value callee, int argCount) {
   }
   runtimeError("Can only call functions and classes.");
   return false;
+}
+
+static ObjUpvalue* captureUpvalue(Value* local) {
+  ObjUpvalue* createdUpvalue = newUpvalue(local);
+  return createdUpvalue;
 }
 
 static bool isFalsey(Value value) {
@@ -290,6 +294,25 @@ static InterpretResult run() {
         ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
         ObjClosure* closure = newClosure(function);
         push(OBJ_VAL(closure));
+        for (int i = 0; i < closure->upvalueCount; i++) {
+          uint8_t isLocal = READ_BYTE();
+          uint8_t index = READ_BYTE();
+          if (isLocal) {
+            closure->upvalues[i] = captureUpvalue(frame->slots + index);
+          } else {
+            closure->upvalues[i] = frame->closure->upvalues[index];
+          }
+        }
+        break;
+      }
+      case OP_GET_UPVALUE: {
+        uint8_t slot = READ_BYTE();
+        push(*frame->closure->upvalues[slot]->location);
+        break;
+      }
+      case OP_SET_UPVALUE: {
+        uint8_t slot = READ_BYTE();
+        *frame->closure->upvalues[slot]->location = peek(0);
         break;
       }
       case OP_RETURN: {

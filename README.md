@@ -2,15 +2,17 @@
 
 Example:
 ```kotlin
-var x = 3;
-{
-  var x = 2;
+fun makeCounter() {
+  var a = 0;
+  fun count() {
+    a = a + 1;
+    return a;
+  }
+  return count;
 }
 
-print x;
-
-
-for (var i = 0; i < 10; i = i + 1) {
-  print "#" + i;
-}
+var count = makeCounter();
+print count();
+print count();
+print count();
 ```

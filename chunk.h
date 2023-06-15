@@ -15,6 +15,8 @@ typedef enum {
   OP_TRUE,
   OP_FALSE,
   OP_POP,
+  OP_GET_PROPERTY,
+  OP_SET_PROPERTY,
   OP_EQUAL,
   OP_GREATER,
   OP_LESS,

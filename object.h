@@ -79,6 +79,7 @@ typedef struct {
 typedef struct {
   Obj obj;
   ObjString* name;
+  Table methods;
 } ObjClass;
 
 typedef struct {
@@ -86,6 +87,12 @@ typedef struct {
   ObjClass* klass;
   Table fields;
 } ObjInstance;
+
+typedef struct {
+  Obj obj;
+  Value receiver;
+  ObjClosure* method;
+} ObjBoundMethod;
 
 static inline bool isObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;

@@ -30,6 +30,7 @@ typedef struct {
   Obj** grayStack;
 
   Table strings;
+  ObjString* initString;
   Table globals;
 
   ObjUpvalue* openUpvalues;

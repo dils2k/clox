@@ -567,11 +567,11 @@ static void classDeclaration() {
     namedVariable(className, false);
     emitByte(OP_INHERIT);
     classCompiler.hasSuperClass = true;
-  }
 
-  beginScope();
-  addLocal(syntheticToken("super"));
-  defineVariable(0);
+    beginScope();
+    addLocal(syntheticToken("super"));
+    defineVariable(0);
+  }
 
   namedVariable(className, false);
 

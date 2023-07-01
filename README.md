@@ -16,3 +16,5 @@ print count();
 print count();
 print count();
 ```
+
+VM's instruction set is defined in [chunk.h](chunk.h)
